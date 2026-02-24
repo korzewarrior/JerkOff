@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JerkOff — Stop Being a Jerk Online</title>
+  <meta name="description" content="A Chrome extension that rewrites your aggressive comments into supportive, positive ones using AI. BYO API key. Privacy-first.">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #000000;
+      --bg-raised: #0d0d0d;
+      --bg-input: #111111;
+      --red: #ff003c;
+      --red-hover: #ff3366;
+      --green: #00ff66;
+      --green-dim: #00cc52;
+      --text: #e0e0e0;
+      --text-muted: #888888;
+      --border: #333333;
+      --shadow-red: rgba(255, 0, 60, 0.3);
+      --shadow-green: rgba(0, 255, 102, 0.3);
+      --font-mono: 'Courier New', Courier, monospace;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: var(--red);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--red-hover);
+    }
+
+    ::selection {
+      background: var(--red);
+      color: #000;
+    }
+
+    /* ========== NAV ========== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.9);
+      border-bottom: 1px dashed var(--border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    nav .nav-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav .logo {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      transition: color 0.15s;
+    }
+
+    nav .nav-links a:hover {
+      color: var(--red);
+    }
+
+    /* ========== SECTIONS ========== */
+    section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 100px 24px;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    h2 {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    /* ========== HERO ========== */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 80px;
+    }
+
+    #hero h1 {
+      font-family: var(--font-mono);
+      font-size: clamp(48px, 10vw, 96px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--red);
+      line-height: 1;
+      margin-bottom: 24px;
+      text-shadow: 4px 4px 0px rgba(255, 0, 60, 0.2);
+    }
+
+    #hero .tagline {
+      font-family: var(--font-mono);
+      font-size: clamp(18px, 3vw, 28px);
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    #hero .subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 540px;
+      margin-bottom: 48px;
+      line-height: 1.7;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 16px 40px;
+      border: 2px solid var(--green);
+      background: transparent;
+      color: var(--green);
+      cursor: pointer;
+      border-radius: 0;
+      box-shadow: 4px 4px 0px var(--shadow-green);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.15s, color 0.15s;
+      text-decoration: none;
+    }
+
+    .cta-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--shadow-green);
+      background: var(--green);
+      color: #000;
+    }
+
+    .cta-btn:active {
+      transform: translate(0, 0);
+      box-shadow: 2px 2px 0px var(--shadow-green);
+    }
+
+    .cta-btn-secondary {
+      border-color: var(--red);
+      color: var(--red);
+      box-shadow: 4px 4px 0px var(--shadow-red);
+    }
+
+    .cta-btn-secondary:hover {
+      box-shadow: 6px 6px 0px var(--shadow-red);
+      background: var(--red);
+      color: #000;
+    }
+
+    .cta-btn-secondary:active {
+      box-shadow: 2px 2px 0px var(--shadow-red);
+    }
+
+    /* ========== HOW IT WORKS ========== */
+    #how-it-works {
+      border-top: 1px dashed var(--border);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      padding: 32px 24px;
+      background: var(--bg-raised);
+      position: relative;
+    }
+
+    .step-number {
+      font-family: var(--font-mono);
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--red);
+      opacity: 0.3;
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      line-height: 1;
+    }
+
+    .step h3 {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .step p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ========== DEMO ========== */
+    #demo {
+      border-top: 1px dashed var(--border);
+    }
+
+    .demo-container {
+      margin-top: 48px;
+      border: 1px solid var(--border);
+      background: var(--bg-raised);
+      overflow: hidden;
+    }
+
+    .demo-header {
+      padding: 16px 24px;
+      border-bottom: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .demo-header span {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+    }
+
+    .demo-btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 20px;
+      border: 2px solid var(--red);
+      background: transparent;
+      color: var(--red);
+      cursor: pointer;
+      border-radius: 0;
+      box-shadow: 3px 3px 0px var(--shadow-red);
+      transition: transform 0.1s, box-shadow 0.1s, background 0.15s, color 0.15s;
+    }
+
+    .demo-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px var(--shadow-red);
+      background: var(--red);
+      color: #000;
+    }
+
+    .demo-btn:active {
+      transform: translate(0, 0);
+      box-shadow: 1px 1px 0px var(--shadow-red);
+    }
+
+    .demo-btn.processing {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .demo-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 200px;
+    }
+
+    @media (max-width: 640px) {
+      .demo-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .demo-panel {
+      padding: 24px;
+    }
+
+    .demo-panel:first-child {
+      border-right: 1px dashed var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .demo-panel:first-child {
+        border-right: none;
+        border-bottom: 1px dashed var(--border);
+      }
+    }
+
+    .demo-panel-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .demo-panel-label.green {
+      color: var(--green);
+    }
+
+    .demo-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      min-height: 60px;
+    }
+
+    .demo-text.muted {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--green);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 0.6s steps(1) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .demo-examples {
+      padding: 16px 24px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .demo-examples span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .example-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .example-btn:hover {
+      border-color: var(--red);
+      color: var(--text);
+    }
+
+    /* ========== FEATURES ========== */
+    #features {
+      border-top: 1px dashed var(--border);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .feature {
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      background: var(--bg-raised);
+      border-left: 3px solid var(--red);
+    }
+
+    .feature-icon {
+      font-size: 24px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .feature h3 {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .feature p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ========== INSTALL ========== */
+    #install {
+      border-top: 1px dashed var(--border);
+      padding-bottom: 60px;
+    }
+
+    .install-box {
+      margin-top: 48px;
+      border: 2px solid var(--green);
+      padding: 48px;
+      background: var(--bg-raised);
+      box-shadow: 8px 8px 0px var(--shadow-green);
+      text-align: center;
+    }
+
+    .install-box h3 {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--green);
+      margin-bottom: 16px;
+    }
+
+    .install-box p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .install-steps {
+      margin-top: 48px;
+      text-align: left;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .install-steps h4 {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .install-steps ol {
+      list-style: none;
+      counter-reset: install-counter;
+    }
+
+    .install-steps ol li {
+      counter-increment: install-counter;
+      padding: 12px 0 12px 40px;
+      position: relative;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .install-steps ol li:last-child {
+      border-bottom: none;
+    }
+
+    .install-steps ol li::before {
+      content: counter(install-counter);
+      position: absolute;
+      left: 0;
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--red);
+      opacity: 0.5;
+    }
+
+    .install-steps code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      color: var(--green);
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      border-top: 1px dashed var(--border);
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    footer p {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--red);
+    }
+
+    /* ========== SCROLL ANIMATIONS ========== */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 640px) {
+      section {
+        padding: 72px 16px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      .install-box {
+        padding: 32px 20px;
+      }
+
+      nav .nav-links {
+        gap: 16px;
+      }
+
+      nav .nav-links a {
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">JerkOff</div>
+      <ul class="nav-links">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <h1>JerkOff</h1>
+    <p class="tagline">Stop being a jerk online.</p>
+    <p class="subtitle">
+      A Chrome extension that intercepts your angry comments and rewrites them
+      into something supportive using AI. Because the internet has enough jerks already.
+    </p>
+    <a href="#install" class="cta-btn">Get the Extension</a>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="fade-in">
+    <span class="section-label">// How It Works</span>
+    <h2>Three steps to not being a jerk</h2>
+    <div class="steps">
+      <div class="step">
+        <span class="step-number">01</span>
+        <h3>Type your angry comment</h3>
+        <p>Go ahead, write that furious reply. Type out every bitter, sarcastic word you're thinking. Get it all out.</p>
+      </div>
+      <div class="step">
+        <span class="step-number">02</span>
+        <h3>Click "Jerk Off"</h3>
+        <p>Hit the button that appears next to any text input. The extension sends your draft to an AI for a full de-jerking.</p>
+      </div>
+      <div class="step">
+        <span class="step-number">03</span>
+        <h3>Post the nice version</h3>
+        <p>Review the rewritten comment. It keeps your intent but strips the venom. Click accept, and be the bigger person.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO -->
+  <section id="demo" class="fade-in">
+    <span class="section-label">// Live Demo</span>
+    <h2>See it in action</h2>
+    <div class="demo-container">
+      <div class="demo-header">
+        <span>Interactive Preview</span>
+        <button class="demo-btn" id="demo-trigger" onclick="runDemo()">Jerk Off</button>
+      </div>
+      <div class="demo-body">
+        <div class="demo-panel">
+          <span class="demo-panel-label">Before // Your Draft</span>
+          <div class="demo-text" id="demo-before">
+            This is the dumbest take I've ever seen. Do you even think before you post? Absolutely braindead opinion.
+          </div>
+        </div>
+        <div class="demo-panel">
+          <span class="demo-panel-label green">After // De-Jerked</span>
+          <div class="demo-text muted" id="demo-after">
+            Click "Jerk Off" to see the magic&hellip;
+          </div>
+        </div>
+      </div>
+      <div class="demo-examples">
+        <span>Try:</span>
+        <button class="example-btn" onclick="loadExample(0)">Angry reply</button>
+        <button class="example-btn" onclick="loadExample(1)">Sarcastic dig</button>
+        <button class="example-btn" onclick="loadExample(2)">Rude dismissal</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="fade-in">
+    <span class="section-label">// Features</span>
+    <h2>What you get</h2>
+    <div class="features-grid">
+      <div class="feature">
+        <span class="feature-icon">&gt;_</span>
+        <h3>BYO API Key</h3>
+        <p>Use your own Gemini or OpenAI key. No middleman, no markup, no subscription.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">&lt;/&gt;</span>
+        <h3>Dual AI Support</h3>
+        <p>Choose between Google Gemini and OpenAI (GPT-4o-mini). Switch anytime in settings.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">***</span>
+        <h3>Works Everywhere</h3>
+        <p>Any text input on any website. Special optimization for Twitter/X replies.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">[x]</span>
+        <h3>Privacy First</h3>
+        <p>Zero data stored. Your API key stays in your browser. No analytics, no tracking, no servers.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">@_@</span>
+        <h3>Context-Aware</h3>
+        <p>Reads the post you're replying to so the rewrite actually makes sense in context.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-icon">^_^</span>
+        <h3>One-Click Replace</h3>
+        <p>Accept the suggestion and it drops right into the text field. Works with React, Vue, and contenteditable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section id="install" class="fade-in">
+    <span class="section-label">// Install</span>
+    <h2>Get JerkOff</h2>
+    <div class="install-box">
+      <h3>Download &amp; Install</h3>
+      <p>JerkOff isn't on the Chrome Web Store (yet). Grab the latest release and sideload it in a few easy steps.</p>
+      <a href="https://github.com/your-repo/jerkoff/releases/latest" class="cta-btn" id="download-btn">
+        Download Latest Release
+      </a>
+      <div class="install-steps">
+        <h4>Manual Install (Sideloading)</h4>
+        <ol>
+          <li>Download and unzip the release to a folder on your computer.</li>
+          <li>Open Chrome and go to <code>chrome://extensions</code></li>
+          <li>Enable <strong>Developer mode</strong> (toggle in the top right corner).</li>
+          <li>Click <strong>"Load unpacked"</strong> and select the unzipped extension folder.</li>
+          <li>Click the extension icon, enter your API key, and you're ready to de-jerk.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>JerkOff &mdash; Making the internet less hostile, one comment at a time.</p>
+  </footer>
+
+  <script>
+    // === DEMO DATA ===
+    const examples = [
+      {
+        before: "This is the dumbest take I've ever seen. Do you even think before you post? Absolutely braindead opinion.",
+        after: "I see where you're coming from, but I think there's another angle worth considering here. Your willingness to share your perspective is something I genuinely appreciate \u2014 it takes guts to put your thoughts out there!"
+      },
+      {
+        before: "Oh wow, what a GENIUS idea. Nobody has EVER thought of that before. You must be so proud of yourself for this groundbreaking contribution.",
+        after: "This is a really solid idea! I think you're onto something here. It's great to see someone thinking about this problem \u2014 I'd love to see you develop this further."
+      },
+      {
+        before: "Literally nobody asked for your opinion. Maybe sit this one out and let the adults talk. Blocked.",
+        after: "Thanks for jumping into the conversation! I think different viewpoints make discussions richer. I appreciate you taking the time to share your thoughts on this."
+      }
+    ];
+
+    let currentExample = 0;
+    let isAnimating = false;
+
+    function loadExample(index) {
+      if (isAnimating) return;
+      currentExample = index;
+      document.getElementById('demo-before').textContent = examples[index].before;
+      document.getElementById('demo-after').innerHTML = 'Click "Jerk Off" to see the magic&hellip;';
+      document.getElementById('demo-after').className = 'demo-text muted';
+      document.getElementById('demo-trigger').classList.remove('processing');
+    }
+
+    function runDemo() {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      const btn = document.getElementById('demo-trigger');
+      const afterEl = document.getElementById('demo-after');
+      const target = examples[currentExample].after;
+
+      btn.classList.add('processing');
+      btn.textContent = 'Jerking off...';
+      afterEl.innerHTML = '';
+      afterEl.className = 'demo-text';
+
+      // Simulate typing the response character by character
+      let i = 0;
+      const speed = 18;
+
+      function typeChar() {
+        if (i < target.length) {
+          afterEl.textContent = target.substring(0, i + 1);
+          // Add cursor
+          const cursor = document.createElement('span');
+          cursor.className = 'typing-cursor';
+          afterEl.appendChild(cursor);
+          i++;
+          setTimeout(typeChar, speed + Math.random() * 15);
+        } else {
+          // Done typing — remove cursor
+          afterEl.textContent = target;
+          btn.textContent = 'Jerk Off';
+          btn.classList.remove('processing');
+          isAnimating = false;
+        }
+      }
+
+      // Brief "processing" delay before typing starts
+      setTimeout(typeChar, 600);
+    }
+
+    // === SCROLL ANIMATIONS ===
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+  </script>
+
+</body>
+</html>
