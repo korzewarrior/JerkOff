@@ -386,6 +386,36 @@
       padding-top: 40px;
     }
 
+    /* --- Video player --- */
+    .video-frame {
+      margin-top: 12px;
+      position: relative;
+      background: #fff;
+      border: 3px solid var(--ink);
+      box-shadow: 5px 5px 0px var(--shadow);
+      transform: rotate(-0.3deg);
+    }
+
+    .video-frame video {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #000;
+    }
+
+    .video-tape {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%) rotate(1deg);
+      width: 100px;
+      height: 24px;
+      background: var(--tape);
+      border-top: 1px solid var(--tape-edge);
+      border-bottom: 1px solid var(--tape-edge);
+      z-index: 2;
+    }
+
     .demo-wrapper {
       margin-top: 12px;
       display: grid;
@@ -865,11 +895,19 @@
 
   <!-- DEMO -->
   <section id="demo" class="reveal">
-    <span class="section-tag">Live Demo</span>
-    <h2>Watch the magic happen</h2>
-    <div class="section-note">no API calls here &mdash; just a taste of what it does</div>
+    <span class="section-tag">Demo</span>
+    <h2>Watch it in action</h2>
+    <div class="section-note">real extension, real anger, real de-jerking</div>
 
-    <div class="demo-wrapper">
+    <div class="video-frame">
+      <div class="video-tape"></div>
+      <video controls playsinline preload="metadata" poster="">
+        <source src="demo.mp4" type="video/mp4">
+        Your browser doesn't support video.
+      </video>
+    </div>
+
+    <div class="demo-wrapper" style="margin-top:48px;">
       <div class="note note-angry">
         <span class="note-label">Your Draft</span>
         <div class="note-text" id="demo-before">This is the dumbest take I've ever seen. Do you even think before you post? Absolutely braindead opinion.</div>
@@ -889,7 +927,7 @@
     </div>
 
     <div class="demo-controls">
-      <button class="demo-trigger" id="demo-trigger" onclick="runDemo()">Jerk Off</button>
+      <button class="demo-trigger" id="demo-trigger" onclick="runDemo()">Try It</button>
     </div>
 
     <div class="demo-examples">
