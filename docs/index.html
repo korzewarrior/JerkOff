@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JerkOff — Stop Being a Jerk Online</title>
+  <meta name="description" content="A Chrome extension that rewrites your aggressive comments into supportive, positive ones using AI. BYO API key. Privacy-first.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Permanent+Marker&family=Caveat:wght@500;700&family=Inter:wght@400;600&display=swap');
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --paper: #f2ebe0;
+      --paper-dark: #e8dfd0;
+      --ink: #1a1a1a;
+      --ink-light: #444;
+      --red-marker: #c1272d;
+      --red-light: #e8444a;
+      --blue-pen: #1b3a8c;
+      --highlighter: rgba(255, 240, 0, 0.55);
+      --pink-note: #ffc2d1;
+      --green-note: #b8e6a3;
+      --tape: rgba(220, 200, 140, 0.55);
+      --tape-edge: rgba(200, 180, 120, 0.3);
+      --shadow: rgba(0, 0, 0, 0.12);
+
+      --font-typewriter: 'Special Elite', 'Courier New', monospace;
+      --font-marker: 'Permanent Marker', 'Impact', cursive;
+      --font-handwritten: 'Caveat', 'Comic Sans MS', cursive;
+      --font-clean: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-clean);
+      line-height: 1.6;
+      overflow-x: hidden;
+      /* subtle paper grain */
+      background-image:
+        url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    ::selection {
+      background: var(--highlighter);
+      color: var(--ink);
+    }
+
+    a { color: var(--blue-pen); text-decoration: underline; }
+    a:hover { color: var(--red-marker); }
+
+    /* ============================================
+       TAPE STRIPS — reusable pseudo-element tape
+       ============================================ */
+    .taped::before {
+      content: '';
+      position: absolute;
+      width: 90px;
+      height: 28px;
+      background: var(--tape);
+      border-top: 1px solid var(--tape-edge);
+      border-bottom: 1px solid var(--tape-edge);
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      z-index: 2;
+    }
+
+    .taped-corner::after {
+      content: '';
+      position: absolute;
+      width: 60px;
+      height: 22px;
+      background: var(--tape);
+      border-top: 1px solid var(--tape-edge);
+      border-bottom: 1px solid var(--tape-edge);
+      top: 8px;
+      right: -10px;
+      transform: rotate(38deg);
+      z-index: 2;
+    }
+
+    /* ============================================
+       NAV — like a strip of masking tape
+       ============================================ */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(242, 235, 224, 0.92);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .nav-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-family: var(--font-marker);
+      font-size: 22px;
+      color: var(--red-marker);
+      transform: rotate(-1deg);
+      display: inline-block;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-typewriter);
+      font-size: 13px;
+      color: var(--ink-light);
+      text-decoration: none;
+      padding: 2px 4px;
+      transition: background 0.15s;
+    }
+
+    .nav-links a:hover {
+      background: var(--highlighter);
+      text-decoration: none;
+    }
+
+    /* ============================================
+       SECTIONS
+       ============================================ */
+    section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 24px;
+      position: relative;
+    }
+
+    /* ============================================
+       HERO — big collage header
+       ============================================ */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-top: 70px;
+      position: relative;
+    }
+
+    .hero-title {
+      font-family: var(--font-marker);
+      font-size: clamp(56px, 12vw, 120px);
+      line-height: 0.95;
+      color: var(--ink);
+      transform: rotate(-2deg);
+      margin-bottom: 8px;
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-title .redacted {
+      background: var(--red-marker);
+      color: #fff;
+      padding: 0 12px;
+      display: inline-block;
+      transform: rotate(1deg);
+      box-shadow: 3px 3px 0px var(--shadow);
+    }
+
+    .hero-tagline {
+      font-family: var(--font-typewriter);
+      font-size: clamp(18px, 3.5vw, 32px);
+      color: var(--ink);
+      margin: 24px 0 8px;
+      transform: rotate(0.5deg);
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-tagline .highlight {
+      background: var(--highlighter);
+      padding: 0 6px;
+    }
+
+    .hero-sub {
+      font-family: var(--font-handwritten);
+      font-size: 22px;
+      color: var(--blue-pen);
+      max-width: 480px;
+      margin: 16px 0 48px;
+      transform: rotate(-0.5deg);
+      line-height: 1.5;
+    }
+
+    /* Arrow doodle pointing to CTA */
+    .hero-arrow {
+      position: absolute;
+      bottom: 18%;
+      left: 340px;
+      font-family: var(--font-handwritten);
+      font-size: 18px;
+      color: var(--red-marker);
+      transform: rotate(-8deg);
+    }
+
+    .hero-arrow svg {
+      display: block;
+      margin-top: -4px;
+      margin-left: 10px;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      font-family: var(--font-marker);
+      font-size: 18px;
+      padding: 16px 36px;
+      background: var(--red-marker);
+      color: #fff;
+      border: 3px solid var(--ink);
+      text-decoration: none;
+      transform: rotate(-1deg);
+      box-shadow: 4px 4px 0px var(--ink);
+      transition: transform 0.12s, box-shadow 0.12s;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .cta-btn:hover {
+      transform: rotate(-1deg) translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--ink);
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .cta-btn:active {
+      transform: rotate(-1deg) translate(1px, 1px);
+      box-shadow: 2px 2px 0px var(--ink);
+    }
+
+    .cta-btn-green {
+      background: #2d8a4e;
+    }
+
+    /* Scattered decorative elements */
+    .doodle-star {
+      position: absolute;
+      font-family: var(--font-handwritten);
+      color: var(--red-marker);
+      font-size: 36px;
+      opacity: 0.5;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       SECTION HEADERS — torn paper / label style
+       ============================================ */
+    .section-tag {
+      display: inline-block;
+      font-family: var(--font-typewriter);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 4px 14px;
+      transform: rotate(-1deg);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-family: var(--font-marker);
+      font-size: clamp(28px, 5vw, 44px);
+      color: var(--ink);
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .section-note {
+      font-family: var(--font-handwritten);
+      font-size: 18px;
+      color: var(--blue-pen);
+      transform: rotate(-0.5deg);
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+
+    /* ============================================
+       DIVIDER — scissors cut-here line
+       ============================================ */
+    .cut-line {
+      border: none;
+      border-top: 2px dashed var(--ink-light);
+      margin: 0;
+      position: relative;
+      opacity: 0.35;
+    }
+
+    .cut-line::before {
+      content: '\\2702';
+      position: absolute;
+      top: -13px;
+      left: 24px;
+      font-size: 18px;
+      color: var(--ink-light);
+      background: var(--paper);
+      padding: 0 6px;
+    }
+
+    /* ============================================
+       HOW IT WORKS — index cards pinned to board
+       ============================================ */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 36px;
+      margin-top: 12px;
+    }
+
+    .step-card {
+      background: #fff;
+      border: 1px solid #d4cfc6;
+      padding: 32px 24px 28px;
+      position: relative;
+      box-shadow: 2px 3px 8px var(--shadow);
+    }
+
+    .step-card:nth-child(1) { transform: rotate(-1.5deg); }
+    .step-card:nth-child(2) { transform: rotate(0.8deg); }
+    .step-card:nth-child(3) { transform: rotate(-0.5deg); }
+
+    .step-card .pin {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 18px;
+      background: var(--red-marker);
+      border-radius: 50%;
+      border: 2px solid #8a1a1e;
+      box-shadow: 1px 2px 3px var(--shadow);
+      z-index: 2;
+    }
+
+    .step-num {
+      font-family: var(--font-marker);
+      font-size: 42px;
+      color: var(--red-marker);
+      opacity: 0.2;
+      position: absolute;
+      top: 8px;
+      right: 14px;
+      line-height: 1;
+    }
+
+    .step-card h3 {
+      font-family: var(--font-typewriter);
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: var(--ink);
+    }
+
+    .step-card p {
+      font-size: 14px;
+      color: var(--ink-light);
+      line-height: 1.6;
+    }
+
+    /* ============================================
+       DEMO — sticky notes / notebook paper
+       ============================================ */
+    #demo {
+      padding-top: 40px;
+    }
+
+    .demo-wrapper {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 680px) {
+      .demo-wrapper { grid-template-columns: 1fr; }
+    }
+
+    .note {
+      padding: 28px 24px 24px;
+      position: relative;
+      box-shadow: 3px 4px 10px var(--shadow);
+      min-height: 180px;
+    }
+
+    .note-angry {
+      background: #fff;
+      border-left: 4px solid var(--red-marker);
+      transform: rotate(-0.8deg);
+      /* ruled lines */
+      background-image: repeating-linear-gradient(
+        transparent, transparent 27px, #e0dbd3 27px, #e0dbd3 28px
+      );
+      background-position: 0 28px;
+    }
+
+    .note-nice {
+      background: var(--green-note);
+      border-left: 4px solid #4a9e5c;
+      transform: rotate(0.6deg);
+    }
+
+    .note-label {
+      font-family: var(--font-typewriter);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 14px;
+      display: block;
+    }
+
+    .note-angry .note-label { color: var(--red-marker); }
+    .note-nice .note-label { color: #2d6e3a; }
+
+    .note-text {
+      font-family: var(--font-handwritten);
+      font-size: 19px;
+      line-height: 1.55;
+      color: var(--ink);
+      min-height: 80px;
+    }
+
+    .note-text.placeholder {
+      color: var(--ink-light);
+      opacity: 0.6;
+    }
+
+    .note-text .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: var(--blue-pen);
+      margin-left: 1px;
+      vertical-align: text-bottom;
+      animation: blink 0.7s steps(1) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .demo-controls {
+      text-align: center;
+      margin-top: 24px;
+    }
+
+    .demo-trigger {
+      font-family: var(--font-marker);
+      font-size: 16px;
+      padding: 12px 28px;
+      background: var(--ink);
+      color: var(--paper);
+      border: 3px solid var(--ink);
+      cursor: pointer;
+      box-shadow: 3px 3px 0px var(--red-marker);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+    .demo-trigger:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px var(--red-marker);
+    }
+
+    .demo-trigger:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px var(--red-marker);
+    }
+
+    .demo-trigger.processing {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .demo-examples {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .demo-examples span {
+      font-family: var(--font-handwritten);
+      font-size: 16px;
+      color: var(--ink-light);
+    }
+
+    .ex-btn {
+      font-family: var(--font-typewriter);
+      font-size: 12px;
+      padding: 4px 12px;
+      background: var(--paper-dark);
+      border: 1px solid #c4bdb0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .ex-btn:hover {
+      background: var(--highlighter);
+    }
+
+    /* Big arrow between notes (desktop) */
+    .demo-arrow {
+      display: none;
+    }
+
+    @media (min-width: 681px) {
+      .demo-wrapper {
+        position: relative;
+      }
+      .demo-arrow {
+        display: block;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+      }
+      .demo-arrow svg {
+        filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.15));
+      }
+    }
+
+    /* ============================================
+       FEATURES — scattered sticky notes / stamps
+       ============================================ */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 28px;
+      margin-top: 12px;
+    }
+
+    .feature-card {
+      background: #fff;
+      border: 1px solid #d4cfc6;
+      padding: 24px 20px;
+      position: relative;
+      box-shadow: 2px 3px 8px var(--shadow);
+    }
+
+    .feature-card:nth-child(1) { transform: rotate(0.6deg); }
+    .feature-card:nth-child(2) { transform: rotate(-0.8deg); }
+    .feature-card:nth-child(3) { transform: rotate(0.4deg); }
+    .feature-card:nth-child(4) { transform: rotate(-1deg); }
+    .feature-card:nth-child(5) { transform: rotate(0.7deg); }
+    .feature-card:nth-child(6) { transform: rotate(-0.3deg); }
+
+    .feature-stamp {
+      font-family: var(--font-marker);
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+      color: var(--red-marker);
+      opacity: 0.7;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-typewriter);
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+
+    .feature-card p {
+      font-size: 13px;
+      color: var(--ink-light);
+      line-height: 1.55;
+    }
+
+    /* Highlight badge on one card */
+    .badge {
+      position: absolute;
+      top: -10px;
+      right: -8px;
+      font-family: var(--font-marker);
+      font-size: 11px;
+      background: var(--red-marker);
+      color: #fff;
+      padding: 4px 10px;
+      transform: rotate(6deg);
+      box-shadow: 1px 2px 4px var(--shadow);
+      z-index: 2;
+    }
+
+    /* ============================================
+       INSTALL — ransom-note style CTA
+       ============================================ */
+    #install {
+      padding-bottom: 60px;
+    }
+
+    .install-envelope {
+      margin-top: 12px;
+      background: #faf6ef;
+      border: 3px solid var(--ink);
+      padding: 48px 40px;
+      position: relative;
+      box-shadow: 6px 6px 0px var(--shadow);
+    }
+
+    .install-envelope .taped-h::before,
+    .install-envelope .taped-h::after {
+      content: '';
+      position: absolute;
+      width: 80px;
+      height: 24px;
+      background: var(--tape);
+      border-top: 1px solid var(--tape-edge);
+      border-bottom: 1px solid var(--tape-edge);
+      z-index: 2;
+    }
+
+    .install-envelope .taped-h::before {
+      top: -12px;
+      left: 30px;
+      transform: rotate(-5deg);
+    }
+
+    .install-envelope .taped-h::after {
+      top: -12px;
+      right: 30px;
+      transform: rotate(3deg);
+    }
+
+    .install-title {
+      font-family: var(--font-marker);
+      font-size: 32px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .install-sub {
+      text-align: center;
+      color: var(--ink-light);
+      margin-bottom: 36px;
+      font-size: 15px;
+    }
+
+    .install-cta-wrap {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .install-steps-list {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .install-steps-list h4 {
+      font-family: var(--font-typewriter);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px dashed #c4bdb0;
+    }
+
+    .install-steps-list ol {
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .install-steps-list li {
+      counter-increment: step;
+      padding: 10px 0 10px 44px;
+      position: relative;
+      font-size: 14px;
+      color: var(--ink-light);
+      line-height: 1.6;
+      border-bottom: 1px dashed #ddd8cf;
+    }
+
+    .install-steps-list li:last-child { border-bottom: none; }
+
+    .install-steps-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0; top: 8px;
+      width: 28px; height: 28px;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--font-marker);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .install-steps-list code {
+      font-family: var(--font-typewriter);
+      font-size: 12px;
+      background: var(--paper-dark);
+      border: 1px solid #c4bdb0;
+      padding: 1px 8px;
+    }
+
+    /* ============================================
+       FOOTER — rubber stamp
+       ============================================ */
+    footer {
+      border-top: 2px solid var(--ink);
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .stamp {
+      display: inline-block;
+      border: 4px solid var(--red-marker);
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-family: var(--font-marker);
+      font-size: 14px;
+      color: var(--red-marker);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      transform: rotate(-4deg);
+      opacity: 0.7;
+    }
+
+    /* ============================================
+       SCROLL REVEAL
+       ============================================ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px) rotate(0.5deg);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+
+    /* ============================================
+       SCATTERED DOODLES (positioned absolutely)
+       ============================================ */
+    .doodle {
+      position: absolute;
+      user-select: none;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Coffee ring stain */
+    .coffee-ring {
+      width: 80px;
+      height: 80px;
+      border: 3px solid rgba(139, 109, 71, 0.15);
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 640px) {
+      section { padding: 60px 16px; }
+      h2 { font-size: 28px; }
+      .install-envelope { padding: 32px 20px; }
+      .nav-links { gap: 12px; }
+      .nav-links a { font-size: 11px; }
+      .hero-arrow { display: none; }
+      .coffee-ring { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <div class="logo">JerkOff</div>
+      <ul class="nav-links">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="doodle-star doodle" style="top:15%;right:8%;transform:rotate(12deg);">*</div>
+    <div class="doodle-star doodle" style="top:22%;right:12%;transform:rotate(-8deg);font-size:24px;">*</div>
+    <div class="coffee-ring doodle" style="top:12%;right:4%;"></div>
+
+    <div class="hero-title">
+      <span class="redacted">Jerk</span>Off
+    </div>
+    <p class="hero-tagline">
+      <span class="highlight">Stop being a jerk online.</span>
+    </p>
+    <p class="hero-sub">
+      A Chrome extension that catches your angry comments and rewrites them into something a decent human would say. Powered by AI. Fueled by your rage.
+    </p>
+    <a href="#install" class="cta-btn">Get the Extension</a>
+
+    <div class="hero-arrow" aria-hidden="true">
+      do it, coward
+      <svg width="40" height="30" viewBox="0 0 40 30" fill="none">
+        <path d="M2 2 C10 10, 20 20, 35 25" stroke="#c1272d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M28 22 L35 25 L30 18" stroke="#c1272d" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </section>
+
+  <hr class="cut-line">
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="reveal">
+    <span class="section-tag">How It Works</span>
+    <h2>Three steps to<br>not being terrible</h2>
+    <div class="section-note">it's embarrassingly simple, really</div>
+
+    <div class="steps">
+      <div class="step-card">
+        <div class="pin"></div>
+        <span class="step-num">1</span>
+        <h3>Type your angry comment</h3>
+        <p>Go ahead. Write that furious reply. Every bitter, sarcastic word. Get it all out of your system.</p>
+      </div>
+      <div class="step-card">
+        <div class="pin"></div>
+        <span class="step-num">2</span>
+        <h3>Click "Jerk Off"</h3>
+        <p>Hit the button that appears next to any text input. Your draft gets sent to AI for a full de-jerking.</p>
+      </div>
+      <div class="step-card">
+        <div class="pin"></div>
+        <span class="step-num">3</span>
+        <h3>Post the nice version</h3>
+        <p>Review the rewrite. It keeps your intent but strips the venom. Click accept. Be the bigger person.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="cut-line">
+
+  <!-- DEMO -->
+  <section id="demo" class="reveal">
+    <span class="section-tag">Live Demo</span>
+    <h2>Watch the magic happen</h2>
+    <div class="section-note">no API calls here &mdash; just a taste of what it does</div>
+
+    <div class="demo-wrapper">
+      <div class="note note-angry">
+        <span class="note-label">Your Draft</span>
+        <div class="note-text" id="demo-before">This is the dumbest take I've ever seen. Do you even think before you post? Absolutely braindead opinion.</div>
+      </div>
+
+      <div class="demo-arrow" aria-hidden="true">
+        <svg width="56" height="40" viewBox="0 0 56 40" fill="none">
+          <path d="M4 20 H44" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+          <path d="M38 12 L48 20 L38 28" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="note note-nice">
+        <span class="note-label">De-Jerked</span>
+        <div class="note-text placeholder" id="demo-after">Click the button to see the transformation...</div>
+      </div>
+    </div>
+
+    <div class="demo-controls">
+      <button class="demo-trigger" id="demo-trigger" onclick="runDemo()">Jerk Off</button>
+    </div>
+
+    <div class="demo-examples">
+      <span>Try another:</span>
+      <button class="ex-btn" onclick="loadExample(0)">Angry reply</button>
+      <button class="ex-btn" onclick="loadExample(1)">Sarcastic dig</button>
+      <button class="ex-btn" onclick="loadExample(2)">Rude dismissal</button>
+    </div>
+  </section>
+
+  <hr class="cut-line">
+
+  <!-- FEATURES -->
+  <section id="features" class="reveal">
+    <span class="section-tag">Features</span>
+    <h2>What's in the box</h2>
+    <div class="section-note">all the good stuff, none of the creepy stuff</div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-stamp">&gt;_</span>
+        <h3>BYO API Key</h3>
+        <p>Use your own Gemini or OpenAI key. No middleman, no markup, no subscription fees.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-stamp">&lt;/&gt;</span>
+        <h3>Dual AI Support</h3>
+        <p>Choose between Google Gemini and OpenAI (GPT-4o-mini). Switch anytime from settings.</p>
+        <span class="badge">New</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-stamp">www</span>
+        <h3>Works Everywhere</h3>
+        <p>Any text input on any website. Special optimization for Twitter/X replies.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-stamp">[x]</span>
+        <h3>Privacy First</h3>
+        <p>Zero data stored. Your API key stays in your browser. No analytics, no tracking, no servers.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-stamp">@_@</span>
+        <h3>Context-Aware</h3>
+        <p>Reads the post you're replying to so the rewrite actually makes sense in context.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-stamp">^_^</span>
+        <h3>One-Click Replace</h3>
+        <p>Accept the suggestion and it drops into the text field. Works with React, Vue, and contenteditable.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="cut-line">
+
+  <!-- INSTALL -->
+  <section id="install" class="reveal">
+    <span class="section-tag">Install</span>
+    <h2>Get JerkOff</h2>
+
+    <div class="install-envelope">
+      <div class="taped-h"></div>
+      <div class="install-title">Download &amp; Install</div>
+      <p class="install-sub">Not on the Chrome Web Store (yet). Grab the latest release and sideload it in a few easy steps.</p>
+
+      <div class="install-cta-wrap">
+        <a href="#" id="download-btn" class="cta-btn cta-btn-green">Download Latest Release</a>
+      </div>
+
+      <div class="install-steps-list">
+        <h4>Manual Install (Sideloading)</h4>
+        <ol>
+          <li>Download and unzip the release to a folder on your computer.</li>
+          <li>Open Chrome and go to <code>chrome://extensions</code></li>
+          <li>Enable <strong>Developer mode</strong> (toggle in the top-right corner).</li>
+          <li>Click <strong>"Load unpacked"</strong> and select the unzipped folder.</li>
+          <li>Click the extension icon, enter your API key, and start de-jerking.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="stamp">
+      Making the internet less hostile &mdash; one comment at a time
+    </div>
+  </footer>
+
+  <script>
+    // === DEMO DATA ===
+    const examples = [
+      {
+        before: "This is the dumbest take I've ever seen. Do you even think before you post? Absolutely braindead opinion.",
+        after: "I see where you're coming from, but I think there's another angle worth considering here. Your willingness to share your perspective is something I genuinely appreciate \u2014 it takes guts to put your thoughts out there!"
+      },
+      {
+        before: "Oh wow, what a GENIUS idea. Nobody has EVER thought of that before. You must be so proud of yourself for this groundbreaking contribution.",
+        after: "This is a really solid idea! I think you're onto something here. It's great to see someone thinking about this problem \u2014 I'd love to see you develop this further."
+      },
+      {
+        before: "Literally nobody asked for your opinion. Maybe sit this one out and let the adults talk. Blocked.",
+        after: "Thanks for jumping into the conversation! I think different viewpoints make discussions richer. I appreciate you taking the time to share your thoughts on this."
+      }
+    ];
+
+    let currentExample = 0;
+    let isAnimating = false;
+
+    function loadExample(index) {
+      if (isAnimating) return;
+      currentExample = index;
+      document.getElementById('demo-before').textContent = examples[index].before;
+      const afterEl = document.getElementById('demo-after');
+      afterEl.textContent = 'Click the button to see the transformation...';
+      afterEl.className = 'note-text placeholder';
+      document.getElementById('demo-trigger').classList.remove('processing');
+    }
+
+    function runDemo() {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      const btn = document.getElementById('demo-trigger');
+      const afterEl = document.getElementById('demo-after');
+      const target = examples[currentExample].after;
+
+      btn.classList.add('processing');
+      btn.textContent = 'Jerking off...';
+      afterEl.textContent = '';
+      afterEl.className = 'note-text';
+
+      let i = 0;
+      const speed = 18;
+
+      function typeChar() {
+        if (i < target.length) {
+          afterEl.textContent = target.substring(0, i + 1);
+          const cursor = document.createElement('span');
+          cursor.className = 'cursor';
+          afterEl.appendChild(cursor);
+          i++;
+          setTimeout(typeChar, speed + Math.random() * 15);
+        } else {
+          afterEl.textContent = target;
+          btn.textContent = 'Jerk Off';
+          btn.classList.remove('processing');
+          isAnimating = false;
+        }
+      }
+
+      setTimeout(typeChar, 500);
+    }
+
+    // === SCROLL REVEAL ===
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+    // === DOWNLOAD LINK ===
+    // Auto-detect GitHub repo from the hosting URL, or fall back to the repo link.
+    // Update this fallback URL once you know your GitHub username/repo.
+    const downloadBtn = document.getElementById('download-btn');
+    const host = window.location.hostname;
+    if (host.endsWith('.github.io')) {
+      const user = host.replace('.github.io', '');
+      const repo = window.location.pathname.split('/')[1] || 'JerkOff';
+      downloadBtn.href = `https://github.com/${user}/${repo}/releases/latest`;
+    } else {
+      // Custom domain or local — update this with your actual repo URL
+      downloadBtn.href = 'https://github.com/YOURUSERNAME/JerkOff/releases/latest';
+    }
+  </script>
+
+</body>
+</html>

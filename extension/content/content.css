@@ -1,0 +1,263 @@
+/* ===========================================
+   JerkOff Content Script — Punk Zine Aesthetic
+   System fonts only (injected into every page)
+   =========================================== */
+
+/* --- Floating Analyze Button --- */
+#jerkoff-analyze-btn {
+    position: absolute;
+    z-index: 2147483646;
+    background: #f2ebe0;
+    color: #c1272d;
+    border: 2px solid #1a1a1a;
+    border-radius: 0;
+    padding: 5px 14px 6px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    pointer-events: auto;
+    transform: rotate(-1deg);
+}
+
+#jerkoff-analyze-btn:hover {
+    background: #c1272d;
+    color: #fff;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.25);
+    transform: rotate(-1deg);
+}
+
+#jerkoff-analyze-btn:active {
+    transform: rotate(-1deg) translate(1px, 1px);
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+
+#jerkoff-analyze-btn.jerkoff-hidden {
+    display: none !important;
+    opacity: 0;
+}
+
+#jerkoff-analyze-btn.jerkoff-visible {
+    display: flex !important;
+    animation: jerkoff-fade-in 0.15s ease-out forwards;
+}
+
+@keyframes jerkoff-fade-in {
+    from {
+        opacity: 0;
+        transform: rotate(-1deg) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(-1deg) translateY(0);
+    }
+}
+
+/* --- Suggestion Popup --- */
+#jerkoff-suggestion-popup {
+    position: absolute;
+    z-index: 2147483647;
+    width: 380px;
+    background-color: #faf6ef;
+    /* Paper texture via gradient noise */
+    background-image:
+        url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    border: 2px solid #1a1a1a;
+    border-left: 5px solid #c1272d;
+    border-radius: 0;
+    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1a1a1a;
+    overflow: hidden;
+    /* Slight rotation like a pinned card */
+    transform: rotate(0.4deg);
+}
+
+#jerkoff-suggestion-popup.jerkoff-hidden {
+    display: none !important;
+}
+
+#jerkoff-suggestion-popup.jerkoff-visible {
+    display: flex !important;
+    flex-direction: column;
+    animation: jerkoff-pop-in 0.2s ease-out forwards;
+}
+
+@keyframes jerkoff-pop-in {
+    from {
+        opacity: 0;
+        transform: rotate(0.4deg) scale(0.96) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(0.4deg) scale(1) translateY(0);
+    }
+}
+
+/* --- Header: looks like a label strip --- */
+.jerkoff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    background-color: #1a1a1a;
+    border-bottom: none;
+    position: relative;
+}
+
+/* Tape strip on the header */
+.jerkoff-header::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: 40px;
+    width: 50px;
+    height: 16px;
+    background: rgba(220, 200, 140, 0.5);
+    border-top: 1px solid rgba(200, 180, 120, 0.3);
+    border-bottom: 1px solid rgba(200, 180, 120, 0.3);
+    transform: rotate(5deg);
+    z-index: 2;
+}
+
+.jerkoff-title {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f2ebe0;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.jerkoff-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.1s;
+    font-family: Georgia, serif;
+}
+
+.jerkoff-close:hover {
+    color: #c1272d;
+}
+
+/* --- Content area: ruled notebook paper --- */
+.jerkoff-content {
+    padding: 18px;
+    font-size: 14px;
+    line-height: 1.65;
+    min-height: 80px;
+    max-height: 280px;
+    overflow-y: auto;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #333;
+    /* Ruled lines */
+    background-image: repeating-linear-gradient(
+        transparent, transparent 27px, #e0dbd3 27px, #e0dbd3 28px
+    );
+    background-position: 0 18px;
+}
+
+#jerkoff-suggestion-text {
+    white-space: pre-wrap;
+}
+
+#jerkoff-error-text {
+    color: #c1272d;
+    background-color: rgba(193, 39, 45, 0.08);
+    padding: 12px;
+    border: 2px dashed #c1272d;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+}
+
+/* --- Loading state --- */
+#jerkoff-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    gap: 14px;
+    color: #888;
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+}
+
+.jerkoff-spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #e0dbd3;
+    border-top-color: #c1272d;
+    border-radius: 50%;
+    animation: jerkoff-spin 0.7s linear infinite;
+}
+
+@keyframes jerkoff-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.jerkoff-hidden {
+    display: none !important;
+}
+
+/* --- Footer: torn-edge look --- */
+.jerkoff-footer {
+    padding: 10px 16px;
+    background-color: #f0e9dd;
+    border-top: 2px dashed #c4bdb0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+#jerkoff-replace-btn {
+    background-color: #2d8a4e;
+    color: #fff;
+    border: 2px solid #1a1a1a;
+    padding: 7px 20px;
+    border-radius: 0;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+    transform: rotate(-0.5deg);
+}
+
+#jerkoff-replace-btn:hover:not(:disabled) {
+    transform: rotate(-0.5deg) translate(-2px, -2px);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+    background-color: #34a05a;
+}
+
+#jerkoff-replace-btn:active:not(:disabled) {
+    transform: rotate(-0.5deg) translate(1px, 1px);
+    box-shadow: 0 0 0 transparent;
+}
+
+#jerkoff-replace-btn:disabled {
+    background-color: #c4bdb0;
+    border-color: #aaa;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
