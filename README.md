@@ -6,7 +6,7 @@ A Chrome extension that catches your angry comments and rewrites them into somet
 
 ## Demo
 
-<video src="https://github.com/korzewarrior/JerkOff/raw/main/docs/demo.mp4" controls width="100%"></video>
+![Demo](https://github.com/korzewarrior/JerkOff/raw/main/docs/demo.mp4)
 
 ## How It Works
 
